@@ -77,7 +77,8 @@ var overlays = {
 
 
 var layersControl = L.control.layers.minimap(baselayers, overlays, {
-    collapsed: false
+    collapsed: false,
+    switcher: true
 }).addTo(map);
 
 var filter = function () {

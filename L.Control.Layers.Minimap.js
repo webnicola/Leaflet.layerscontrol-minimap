@@ -13,6 +13,7 @@ require('leaflet.sync');
 L.Control.Layers.Minimap = L.Control.Layers.extend({
     options: {
         position: 'topright',
+        switcher: false,
         topPadding: 10,
         bottomPadding: 40,
         overlayBackgroundLayer: L.tileLayer('http://{s}.tile.openstreetmap.se/hydda/base/{z}/{x}/{y}.png', {
@@ -67,6 +68,8 @@ L.Control.Layers.Minimap = L.Control.Layers.extend({
         this._map.on('resize', this._onResize, this);
         this._onResize();
         this._map.whenReady(this._onListScroll, this);
+
+        this.options.switcher && this._map.whenReady(this._onInputChecked, this);
     },
 
     _addItem: function (obj) {
@@ -101,6 +104,62 @@ L.Control.Layers.Minimap = L.Control.Layers.extend({
 
         return label;
     },
+
+    _onInputClick: function () {
+
+  		var inputs = this._form.getElementsByTagName('input'),
+      labels = this._form.getElementsByTagName('label'),
+  		input, label, layer, hasLayer;
+  		var addedLayers = [],
+  		removedLayers = [];
+
+  		this._handlingClick = true;
+
+  		for (var i = inputs.length - 1; i >= 0; i--) {
+  			input = inputs[i];
+  			label = labels[i];
+  			layer = this._getLayer(input.layerId).layer;
+  			hasLayer = this._map.hasLayer(layer);
+
+  			if (input.checked && !hasLayer) {
+  				addedLayers.push(layer);
+
+  				input.type === 'radio' && this.options.switcher && L.DomUtil.addClass(label, 'leaflet-minimap-hidden');
+
+  			} else if (!input.checked && hasLayer) {
+  				removedLayers.push(layer);
+
+  				input.type === 'radio' && this.options.switcher && L.DomUtil.removeClass(label, 'leaflet-minimap-hidden');
+  			}
+  		}
+
+  		// Bugfix issue 2318: Should remove all old layers before readding new ones
+  		for (i = 0; i < removedLayers.length; i++) {
+  			this._map.removeLayer(removedLayers[i]);
+  		}
+  		for (i = 0; i < addedLayers.length; i++) {
+  			this._map.addLayer(addedLayers[i]);
+  		}
+
+  		this._handlingClick = false;
+
+  		this._refocusOnMap();
+  	},
+
+    _onInputChecked: function () {
+  		var inputs = this._form.getElementsByTagName('input'),
+  				labels = this._form.getElementsByTagName('label'),
+  				input, label;
+
+  		for (var i = inputs.length - 1; i >= 0; i--) {
+  			input = inputs[i];
+  			label = labels[i];
+
+  			if (input.checked) {
+  				L.DomUtil.addClass(label, 'leaflet-minimap-hidden');
+  			}
+  		}
+  	},
 
     _onResize: function () {
         var mapHeight = this._map.getContainer().clientHeight;
